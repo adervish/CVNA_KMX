@@ -117,6 +117,46 @@ CREATE MATERIALIZED VIEW kmx_vehicles AS
 ALTER TABLE kmx_vehicles OWNER TO acd;
 
 --
+-- Name: compare; Type: VIEW; Schema: carvana; Owner: acd
+--
+
+CREATE VIEW compare AS
+ SELECT c.year,
+    c.miles AS c_miles,
+    c.price AS c_price,
+    (((kmx.price)::text)::double precision - ((c.price)::text)::double precision) AS price_diff,
+    kmx.price AS k_price,
+    kmx.miles AS k_miles,
+    c.vin AS c_vin,
+    c.stockid AS c_stockid,
+    kmx.vin AS k_vin,
+    kmx.stocknumber AS k_stocknumber,
+    kmx.transmission AS k_transmission,
+    c.make,
+    c.model,
+    c."trim" AS c_trim,
+    kmx.descr AS k_trim,
+    kmx.drivetrain AS k_drivetrain
+   FROM (carvana_vehicles c
+     LEFT JOIN LATERAL ( SELECT k.miles,
+            k.vin,
+            k.stocknumber,
+            k.transmission,
+            k.drivetrain,
+            k.price,
+            k.make,
+            k.model,
+            k.descr
+           FROM kmx_vehicles k
+          WHERE ((k.model = c.model) AND (k.make = c.make) AND (c.year = k.year) AND (abs((k.miles - (((c.miles / (1000)::numeric))::integer)::numeric)) < (3)::numeric) AND ((k.descr)::text ~~* (('%'::text || btrim((c."trim")::text, '"'::text)) || '"'::text)) AND (((k.drivetrain)::text = '"2WD"'::text) OR (c.morefeatures ~~ (('%'::text || btrim((k.drivetrain)::text, '"'::text)) || '%'::text))))
+          ORDER BY (abs((k.miles - (((c.miles / (1000)::numeric))::integer)::numeric)))
+         LIMIT 1) kmx ON (true))
+  WHERE (kmx.price IS NOT NULL);
+
+
+ALTER TABLE compare OWNER TO acd;
+
+--
 -- Name: honda_compare; Type: VIEW; Schema: carvana; Owner: acd
 --
 
@@ -140,6 +180,70 @@ CREATE VIEW honda_compare AS
 
 
 ALTER TABLE honda_compare OWNER TO acd;
+
+--
+-- Name: honda_compare_2; Type: VIEW; Schema: carvana; Owner: acd
+--
+
+CREATE VIEW honda_compare_2 AS
+ SELECT c.year,
+    c.miles AS c_miles,
+    c.price AS c_price,
+    (((kmx.price)::text)::double precision - ((c.price)::text)::double precision) AS price_diff,
+    kmx.price AS k_price,
+    kmx.miles AS k_miles,
+    c.make,
+    c.model,
+    c."trim" AS c_trim,
+    kmx.descr AS k_trim,
+    kmx.drivetrain AS k_drivetrain
+   FROM (carvana_vehicles c
+     LEFT JOIN LATERAL ( SELECT k.miles,
+            k.drivetrain,
+            k.price,
+            k.make,
+            k.model,
+            k.descr
+           FROM kmx_vehicles k
+          WHERE ((k.model = c.model) AND (k.make = c.make) AND (c.year = k.year) AND (abs((k.miles - (((c.miles / (1000)::numeric))::integer)::numeric)) < (3)::numeric) AND ((k.descr)::text ~~* (('%'::text || btrim((c."trim")::text, '"'::text)) || '"'::text)) AND (((k.drivetrain)::text = '"2WD"'::text) OR (c.morefeatures ~~ (('%'::text || btrim((k.drivetrain)::text, '"'::text)) || '%'::text))))
+          ORDER BY (abs((k.miles - (((c.miles / (1000)::numeric))::integer)::numeric)))
+         LIMIT 1) kmx ON (true));
+
+
+ALTER TABLE honda_compare_2 OWNER TO acd;
+
+--
+-- Name: temp; Type: TABLE; Schema: carvana; Owner: acd
+--
+
+CREATE TABLE temp (
+    year jsonb,
+    c_miles numeric,
+    c_price numeric,
+    price_diff double precision,
+    k_price jsonb,
+    k_miles numeric,
+    c_vin jsonb,
+    c_stockid jsonb,
+    k_vin jsonb,
+    k_stocknumber jsonb,
+    k_transmission jsonb,
+    make jsonb,
+    model jsonb,
+    c_trim jsonb,
+    k_trim jsonb,
+    k_drivetrain jsonb
+);
+
+
+ALTER TABLE temp OWNER TO acd;
+
+--
+-- Name: kmx_idx; Type: INDEX; Schema: carvana; Owner: acd
+--
+
+CREATE INDEX kmx_idx ON kmx_vehicles USING btree (model, make);
+
 
 --
 -- PostgreSQL database dump complete
