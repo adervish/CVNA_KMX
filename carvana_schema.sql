@@ -55,6 +55,7 @@ CREATE MATERIALIZED VIEW carvana_vehicles AS
     (vehicles_jsonb.vehicle -> 'trim'::text) AS "trim",
     (vehicles_jsonb.vehicle -> 'trimLine1'::text) AS trimline1,
     (vehicles_jsonb.vehicle -> 'trimLine2'::text) AS trimline2,
+    ((vehicles_jsonb.vehicle -> 'tileMoreFeatures'::text))::text AS morefeatures,
     (((vehicles_jsonb.vehicle -> 'mileage'::text))::text)::numeric AS miles,
     ((((vehicles_jsonb.vehicle -> 'price'::text) -> 'total'::text))::text)::numeric AS price,
     (vehicles_jsonb.vehicle -> 'year'::text) AS year,
@@ -66,7 +67,7 @@ CREATE MATERIALIZED VIEW carvana_vehicles AS
    FROM ( SELECT carvana_doc.date,
             jsonb_array_elements(((carvana_doc.doc -> 'inventory'::text) -> 'vehicles'::text)) AS vehicle
            FROM carvana_doc) vehicles_jsonb
-  GROUP BY (vehicles_jsonb.vehicle -> 'vin'::text), (vehicles_jsonb.vehicle -> 'stockNumber'::text), (vehicles_jsonb.vehicle -> 'make'::text), (vehicles_jsonb.vehicle -> 'model'::text), (vehicles_jsonb.vehicle -> 'trim'::text), (((vehicles_jsonb.vehicle -> 'mileage'::text))::text)::numeric, ((((vehicles_jsonb.vehicle -> 'price'::text) -> 'total'::text))::text)::numeric, (vehicles_jsonb.vehicle -> 'year'::text), (vehicles_jsonb.vehicle -> 'addedToCoreInventoryDateTime'::text), (vehicles_jsonb.vehicle -> 'ext_TileColorName'::text), (vehicles_jsonb.vehicle -> 'trimLine1'::text), (vehicles_jsonb.vehicle -> 'trimLine2'::text), vehicles_jsonb.date
+  GROUP BY (vehicles_jsonb.vehicle -> 'vin'::text), (vehicles_jsonb.vehicle -> 'stockNumber'::text), (vehicles_jsonb.vehicle -> 'make'::text), (vehicles_jsonb.vehicle -> 'model'::text), (vehicles_jsonb.vehicle -> 'trim'::text), (((vehicles_jsonb.vehicle -> 'mileage'::text))::text)::numeric, ((((vehicles_jsonb.vehicle -> 'price'::text) -> 'total'::text))::text)::numeric, (vehicles_jsonb.vehicle -> 'year'::text), (vehicles_jsonb.vehicle -> 'addedToCoreInventoryDateTime'::text), (vehicles_jsonb.vehicle -> 'ext_TileColorName'::text), (vehicles_jsonb.vehicle -> 'trimLine1'::text), (vehicles_jsonb.vehicle -> 'trimLine2'::text), vehicles_jsonb.date, ((vehicles_jsonb.vehicle -> 'tileMoreFeatures'::text))::text
   WITH NO DATA;
 
 
@@ -114,6 +115,31 @@ CREATE MATERIALIZED VIEW kmx_vehicles AS
 
 
 ALTER TABLE kmx_vehicles OWNER TO acd;
+
+--
+-- Name: honda_compare; Type: VIEW; Schema: carvana; Owner: acd
+--
+
+CREATE VIEW honda_compare AS
+ SELECT k.year,
+    k.model,
+    k.make,
+    k.miles AS k_miles,
+    ((c.miles / (1000)::numeric))::integer AS c_miles,
+    (k.miles - (((c.miles / (1000)::numeric))::integer)::numeric) AS miles_diff,
+    k.price AS k_price,
+    c.price AS c_price,
+    (((k.price)::text)::double precision - ((c.price)::text)::double precision) AS price_diff,
+    k.descr AS k_trim,
+    (k.drivetrain)::text AS k_drivetrain,
+    c."trim" AS c_trim
+   FROM kmx_vehicles k,
+    carvana_vehicles c
+  WHERE ((k.model = '"Civic"'::jsonb) AND (k.year = c.year) AND (k.model = c.model) AND (k.make = c.make) AND (k.make = '"Honda"'::jsonb) AND (abs((k.miles - (((c.miles / (1000)::numeric))::integer)::numeric)) < (3)::numeric) AND ((k.descr)::text ~~* (('%'::text || btrim((c."trim")::text, '"'::text)) || '"'::text)) AND (((k.drivetrain)::text = '"2WD"'::text) OR (c.morefeatures ~~ (('%'::text || btrim((k.drivetrain)::text, '"'::text)) || '%'::text))))
+  ORDER BY k.make, k.model, k.year;
+
+
+ALTER TABLE honda_compare OWNER TO acd;
 
 --
 -- PostgreSQL database dump complete
