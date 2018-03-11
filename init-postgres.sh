@@ -1,1 +1,5 @@
-pg_restore -n carvana -s < tables.sql
+#!/bin/bash
+set -x
+
+psql -f carvana_schema.sql
+

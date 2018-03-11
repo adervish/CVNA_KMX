@@ -12,11 +12,13 @@ try:
 except:
     print "I am unable to connect to the database"
     
-for filename in sys.argv[1:]:
+for filename in sys.argv[2:]:
     with open(filename, 'r') as content_file:
         js = json.loads(content_file.read())
         cur = conn.cursor()
-        sql = "INSERT into KMX_DOC (doc) values (%s)"
-        cur.execute(sql, (json.dumps(js),))
+        cur.execute("SET search_path = carvana") 
+        sql = "INSERT into CARVANA_DOC (doc, filename, date) values (%s, %s, %s)"
+        print js['inventory']['vehicles']
+        cur.execute(sql, (json.dumps(js),filename, sys.argv[1]))
         conn.commit()
         cur.close()
