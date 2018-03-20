@@ -9,6 +9,6 @@ cd data/`date +%Y-%m-%d`
 ../../carvana-all.sh
 ../../kmx-all.sh
 
-carvana-import.py `date +%Y-%m-%d` /data/`date +%Y-%m-%d`/carvana*json
-kmx-import.py `date +%Y-%m-%d` /data/`date +%Y-%m-%d`/kmx*json
+./carvana-import.py `date +%Y-%m-%d` data/`date +%Y-%m-%d`/carvana*json
+./kmx-import.py `date +%Y-%m-%d` data/`date +%Y-%m-%d`/kmx*json
 
