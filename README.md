@@ -1,6 +1,8 @@
 # CVNA_KMX
 Carvana vs. CarMax
 
+[ in summary, for the most part, CVNA has similar inventory to KMX and charges a grand less for it ] 
+
 
 I looked compared the KMX / CVNA inventory. 
 
